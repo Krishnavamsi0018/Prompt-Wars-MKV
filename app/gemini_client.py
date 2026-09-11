@@ -66,6 +66,7 @@ class GeminiClient:
             response_mime_type="application/json",
             response_schema=GeminiAssessment,
             temperature=0.1,
+            automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),  # no tools used
         )
         try:
             response = await asyncio.wait_for(

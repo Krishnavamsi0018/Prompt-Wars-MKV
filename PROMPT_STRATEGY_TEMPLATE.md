@@ -29,7 +29,14 @@
 - Explicit out-of-scope and too-vague branches with exact field values, so failures are structured rather than improvised.
 - `<user_report>` delimiters + "data, not instructions" clause against prompt injection (code also strips attempts to close the tag).
 
-**Result / issue found:** *Not yet tested against the live model — pending Gemini API key.*
+**Result / issue found (live connectivity test, 1 case, `gemini-3.6-flash`):**
+- Setup findings: `gemini-2.5-flash` returned 404 "no longer available to new users" → switched `GEMINI_MODEL` to `gemini-3.6-flash`. First call to it returned 503 "high demand" (transient); the retry succeeded in 5.8 s. The 503 confirms the fallback card is a real need, not a hypothetical.
+- The response schema (enums, length caps, protocol-ID enum) was accepted by the live API and the reply parsed with our Pydantic model on the first attempt.
+- Input: *"my father fell on the stairs, there is blood on his head, he is not answering. we are near Hebbal flyover"*. Output: `emergency` / `injury_trauma` / `critical`; 4 facts, **all 4 quotes verified** by code against the user's text; protocols `unresponsive_person` + `severe_bleeding`; follow-ups asked about breathing, exact address and bleeding severity — the right responder questions.
+- Observations to act on (not yet changed):
+  1. Our red-flag rules did **not** fire: "not answering" is not in the `unresponsive` rule. The model rated it critical on its own, but the deterministic floor would not have caught a model under-rating here.
+  2. The fact *value* "Father is unresponsive" is an interpretation of the quote "he is not answering" — the quote verifies, but the value slightly goes beyond it.
+  3. "Fell on stairs" was categorised as `hazard` rather than `injury`/`other` (minor).
 
 ### v2
 **What changed and why:** *(to be filled after v1 is tested)*

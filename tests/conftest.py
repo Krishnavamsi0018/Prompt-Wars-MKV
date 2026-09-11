@@ -1,6 +1,11 @@
 import json
+import os
 
-import pytest
+# Tests must never reach the real Gemini API or depend on a developer's .env.
+# Set before importing the app: load_dotenv() does not override existing variables.
+os.environ["GEMINI_API_KEY"] = ""
+
+import pytest  # noqa: E402
 from fastapi.testclient import TestClient
 
 from app.gemini_client import LLMError

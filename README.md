@@ -93,7 +93,7 @@ Open http://localhost:8000. Without a key the app still runs and serves fallback
 | Name | Required | Default | Purpose |
 |---|---|---|---|
 | `GEMINI_API_KEY` | yes (for AI) | – | Server-side only. Never sent to the browser, never committed. |
-| `GEMINI_MODEL` | no | `gemini-2.5-flash` | Model id |
+| `GEMINI_MODEL` | no | `gemini-3.6-flash` | Model id (`gemini-2.5-flash` is no longer available to new API keys) |
 | `GEMINI_TIMEOUT_S` | no | `25` | Hard timeout per Gemini call |
 | `RATE_LIMIT_PER_MINUTE` | no | `8` | Per-IP limit on `/api/analyze` |
 | `MAX_TEXT_CHARS`, `MAX_IMAGES`, `MAX_IMAGE_BYTES` | no | `4000`, `3`, `5 MB` | Input limits |

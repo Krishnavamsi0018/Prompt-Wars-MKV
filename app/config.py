@@ -15,7 +15,7 @@ def _int(name: str, default: int) -> int:
 @dataclass(frozen=True)
 class Settings:
     gemini_api_key: str = os.getenv("GEMINI_API_KEY", "")
-    gemini_model: str = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+    gemini_model: str = os.getenv("GEMINI_MODEL", "gemini-3.6-flash")
     gemini_timeout_s: int = _int("GEMINI_TIMEOUT_S", 25)
     max_text_chars: int = _int("MAX_TEXT_CHARS", 4000)
     max_images: int = _int("MAX_IMAGES", 3)
