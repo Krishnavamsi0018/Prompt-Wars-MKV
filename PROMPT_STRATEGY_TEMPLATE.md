@@ -83,11 +83,22 @@ Run with `--single-call`: a hard budget of exactly one real API call per case (n
 **Result / issue found:** v2 shows the intended improvement on the one case where v1 had a visible prompt-level failure and v2 could be observed (minor_injury), and no regression on out_of_scope. The three safety-critical cases could not be observed on v2 because of model capacity errors. **Availability of `gemini-3.6-flash` is now the largest observed risk** — 3 of 5 calls in this batch failed. In every failed case, the deterministic fallback produced the correct severity and the correct vetted card(s), and no model-written content.
 
 ### Final version
-**Prompt:** *(to be filled)*
-**Why this is the final version — what it solves that earlier versions didn't:** *(to be filled)*
+**Prompt:** v2 — [`app/prompts/system_prompt.md`](app/prompts/system_prompt.md) (v1 is kept unchanged at [`app/prompts/archive/system_prompt_v1.md`](app/prompts/archive/system_prompt_v1.md) for comparison). The prompt was not changed after v2.
+
+**Why this is the final version — what it solves that earlier versions didn't:**
+- Every v2 change targets a failure we actually observed in the v1 live run: the overstated summary ("unresponsive, possibly not breathing" for "not answering, can't tell if breathing"), follow-up questions that smuggled in instructions or asked about medical history, and protocol over-selection (a CPR card for "very sleepy", a generic "call 112" card for a small cut).
+- Where v2 could be observed live, it behaved as intended: on the minor-cut case the model chose no card on its own and asked about the current situation, and the out-of-scope case did not regress.
+- The highest-risk failure (overstating what the user said) is not left to the prompt alone. A deterministic guard replaces any fact value or summary that adds a strong clinical claim the user never wrote, and it is tested against the exact real v1 output.
+
+**What we could not confirm (honest limits):**
+- **3 of the 5 v2 cases were never observed on the model.** Gemini returned **503 UNAVAILABLE ("high demand")** on those calls, and we had deliberately capped the batch at one call per case. So whether v2 fixes the CPR over-selection and the overstated summary *at the prompt level* is unverified; only the code-level guards for them are tested.
+- Availability of the free-tier Gemini API was the main obstacle during the build: 503s on several calls, one 504 after 22 s, a single test call to `gemini-3.7-flash` that also returned 503, and one end-to-end request through the deployed app that fell back to the rules-only card after 25.7 s (we did not inspect the server logs, so its exact cause is unconfirmed).
+- We chose to lock v2 instead of iterating further because we saw no regression, the remaining risks are covered by deterministic code, and the free tier's per-day request limit plus the 503s made more live runs impractical before the freeze.
+
+**Reliability work added after v2 (code only, prompt unchanged):** optional failover to other Gemini models on 429/503/504, one shared 25 s budget for the whole Gemini step (including the schema-repair call), and the existing rules-only fallback card whenever no model answers. None of this changes what the model is asked to do.
 
 ## Edge cases handled
-Behaviour below is verified by the automated test suite (`tests/`, Gemini mocked). Live-model results will be added separately.
+Behaviour below is verified by the automated test suite (`tests/`, Gemini mocked; 108 tests in total). Live-model results are in the v1/v2 evaluation sections above.
 
 | Case | Behavior | Test |
 |---|---|---|
