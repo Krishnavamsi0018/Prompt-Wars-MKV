@@ -3,6 +3,7 @@
 Uses real API quota - run deliberately, not in CI.
     python -m evals.run_evals            # all cases
     python -m evals.run_evals minor_injury out_of_scope
+    python -m evals.run_evals --single-call   # hard budget: one real call per case
 Results: evals/results/<prompt-version>.json (committed as evidence for the prompt iteration log).
 """
 
@@ -24,11 +25,15 @@ TRANSIENT_RETRY_DELAY_S = 10
 class RecordingLLM:
     """Wraps the real client and keeps every raw reply / error for the record."""
 
-    def __init__(self, inner: GeminiClient) -> None:
+    def __init__(self, inner: GeminiClient, max_calls: int | None = None) -> None:
         self.inner = inner
+        self.max_calls = max_calls
         self.log: list[dict] = []
 
     async def generate(self, user_text, images, correction=None):
+        if self.max_calls is not None and len(self.log) >= self.max_calls:
+            self.log.append({"ok": False, "seconds": 0, "error": "call budget exhausted (not sent)"})
+            raise LLMError("call_budget_exhausted")
         t0 = time.perf_counter()
         try:
             raw = await self.inner.generate(user_text, images, correction)
@@ -66,18 +71,18 @@ def check(card: dict, expect: dict) -> list[str]:
     return problems
 
 
-async def run(selected: list[str]) -> None:
+async def run(selected: list[str], single_call: bool = False) -> None:
     if not settings.gemini_configured:
         sys.exit("GEMINI_API_KEY is not set")
-    version = re.search(r"version:\s*(\S+)", PROMPT_PATH.read_text(encoding="utf-8")).group(1)
+    version = re.search(r"version:\s*(v\d+)", PROMPT_PATH.read_text(encoding="utf-8")).group(1)
     cases = [c for c in json.loads((ROOT / "cases.json").read_text(encoding="utf-8"))
              if not selected or c["id"] in selected]
     client = GeminiClient(settings)
     results = []
     for case in cases:
-        llm = RecordingLLM(client)
+        llm = RecordingLLM(client, max_calls=1 if single_call else None)
         card = await analyze(llm, case["text"], [])
-        if card.source == "fallback" and llm.log and not llm.log[-1]["ok"]:
+        if not single_call and card.source == "fallback" and llm.log and not llm.log[-1]["ok"]:
             await asyncio.sleep(TRANSIENT_RETRY_DELAY_S)  # one retry for transient 503/429
             card = await analyze(llm, case["text"], [])
         card_d = card.model_dump()
@@ -111,4 +116,6 @@ async def run(selected: list[str]) -> None:
 
 
 if __name__ == "__main__":
-    asyncio.run(run(sys.argv[1:]))
+    args = sys.argv[1:]
+    # --single-call: exactly one real API call per case (no transient retry, no schema-repair retry)
+    asyncio.run(run([a for a in args if a != "--single-call"], single_call="--single-call" in args))
