@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="LifeBridge turns a messy emergency description or photo into clear, verified next steps.">
+  <meta name="theme-color" content="#b3261e">
+  <title>LifeBridge - emergency help, step by step</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#intake-title">Skip to the form</a>
+
+  <header class="sos-bar">
+    <p class="brand" aria-label="LifeBridge">Life<span>Bridge</span></p>
+    <nav class="sos-actions" aria-label="Emergency calls">
+      <a class="btn btn-call" href="tel:112">Call 112</a>
+      <a class="btn btn-call-secondary" href="tel:108">Ambulance 108</a>
+    </nav>
+  </header>
+
+  <main id="main">
+    <section class="intake" aria-labelledby="intake-title">
+      <h1 id="intake-title">What is happening?</h1>
+      <p class="lede">Describe it in your own words, in any language. Add a photo if you can. LifeBridge turns it into clear steps and a message you can send.</p>
+
+      <form id="intake-form" novalidate>
+        <label class="field-label" for="text">Describe the situation</label>
+        <p class="hint" id="text-hint">Who is hurt, what you can see, and where you are.</p>
+        <textarea id="text" name="text" rows="5" maxlength="4000" aria-describedby="text-hint"
+          placeholder="e.g. my father fell on the stairs, he is not answering, there is blood on his head, we are near Hebbal flyover"></textarea>
+
+        <div class="optional">
+          <div class="photo-picker">
+            <label class="btn btn-secondary" for="photos">Add photos</label>
+            <input class="visually-hidden" type="file" id="photos" name="photos" accept="image/jpeg,image/png,image/webp,image/heic" multiple aria-describedby="photo-hint">
+            <p class="hint" id="photo-hint">Up to 3 photos of the scene or of medical papers.</p>
+            <ul class="photo-list" id="photo-list" aria-label="Selected photos"></ul>
+          </div>
+          <div class="location">
+            <button type="button" class="btn btn-secondary" id="loc-btn" aria-pressed="false" aria-describedby="loc-status">Share my location</button>
+            <p class="hint" id="loc-status" role="status">Adds a map link to your SOS message.</p>
+          </div>
+        </div>
+
+        <p class="form-error" id="form-error" role="alert"></p>
+        <button type="submit" class="btn btn-primary" id="submit-btn">Get help steps</button>
+      </form>
+    </section>
+
+    <p class="status" id="status" role="status" aria-live="polite"></p>
+
+    <section class="result" id="result" aria-labelledby="result-title" tabindex="-1" hidden></section>
+  </main>
+
+  <footer class="footer">
+    <p>LifeBridge gives general safety guidance, not medical advice or a diagnosis. It never contacts emergency services for you. If anyone may be in danger, call 112.</p>
+  </footer>
+</body>
+</html>
