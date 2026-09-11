@@ -8,11 +8,11 @@ const MAX_EDGE_PX = 1600;
 const REQUEST_TIMEOUT_MS = 45000;
 
 const SEVERITY = {
-  critical: { icon: "!!", level: "CRITICAL", note: "Danger to life. Call 112 now." },
-  high: { icon: "!", level: "HIGH", note: "Serious. Get help quickly." },
-  moderate: { icon: "●", level: "MODERATE", note: "Needs care, but appears stable." },
-  low: { icon: "✓", level: "LOW", note: "Appears minor." },
-  unknown: { icon: "?", level: "UNKNOWN", note: "Not enough information. If in doubt, call 112." },
+  critical: { level: "CRITICAL", note: "Danger to life. Act now." },
+  high: { level: "HIGH", note: "Serious. Get help quickly." },
+  moderate: { level: "MODERATE", note: "Needs care, but appears stable." },
+  low: { level: "LOW", note: "Appears minor." },
+  unknown: { level: "UNKNOWN SEVERITY", note: "Not enough information. If in doubt, call." },
 };
 const STATUS_BADGE = {
   verified: { text: "Verified from your words", cls: "badge-verified" },
@@ -173,32 +173,63 @@ function section(title, ...children) {
   return el("section", { class: "panel" }, el("h2", { text: title }), ...children);
 }
 
+function sevIcon(severity) {
+  // Decorative: the level is always spelled out in text next to it.
+  const NS = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(NS, "svg");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("class", "sev-icon");
+  svg.setAttribute("aria-hidden", "true");
+  svg.setAttribute("focusable", "false");
+  const path = document.createElementNS(NS, "path");
+  path.setAttribute("fill", "currentColor");
+  path.setAttribute("d", severity === "critical" || severity === "high"
+    ? "M12 2 1 21h22L12 2Zm-1 7h2v6h-2V9Zm0 8h2v2h-2v-2Z"
+    : "M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm-1 5h2v2h-2V7Zm0 4h2v6h-2v-6Z");
+  svg.append(path);
+  return svg;
+}
+
 function renderCard(card) {
   const sev = SEVERITY[card.severity] || SEVERITY.unknown;
+  const outOfScope = card.scope === "out_of_scope";
+  const showCallNow = !outOfScope && ["critical", "high", "unknown"].includes(card.severity) && card.contacts.length;
   const parts = [];
 
+  // 1. Severity banner: level, incident, the one primary action, and the danger signs that drove it.
   parts.push(el("div", { class: `sev sev-${card.severity}` },
-    el("span", { class: "sev-icon", "aria-hidden": "true", text: sev.icon }),
-    el("div", {},
-      el("h2", { id: "result-title", class: "visually-hidden", text: "Your action card" }),
-      el("span", { class: "sev-level", text: `${sev.level} — ${incidentLabel(card.incident_type)}` }),
-      el("span", { text: sev.note }))));
+    el("h2", { id: "result-title", class: "visually-hidden", text: "Your action card" }),
+    el("div", { class: "sev-head" },
+      sevIcon(card.severity),
+      el("div", {},
+        el("p", { class: "sev-level", text: outOfScope ? "NOT AN EMERGENCY" : sev.level }),
+        el("p", { class: "sev-incident", text: outOfScope ? "No safety situation detected" : incidentLabel(card.incident_type) }))),
+    outOfScope ? null : el("p", { class: "sev-note", text: sev.note }),
+    showCallNow ? el("a", { class: "btn btn-sev-call", href: card.contacts[0].tel, text: `Call ${card.contacts[0].number} now` }) : null,
+    card.red_flags.length ? el("ul", { class: "sev-flags", "aria-label": "Danger signs detected" },
+      ...card.red_flags.map((f) => el("li", { text: f.label }))) : null));
 
-  parts.push(el("p", { class: "summary", text: card.summary }));
-
-  if (card.red_flags.length) {
-    parts.push(el("ul", { class: "chips", "aria-label": "Danger signs detected" },
-      ...card.red_flags.map((f) => el("li", { text: f.label }))));
+  // One concise indicator when the card was built without AI (the server's reason notice).
+  if (card.source === "fallback") {
+    parts.push(el("p", { class: "mode-note" },
+      el("strong", { text: "Offline safety mode. " }),
+      el("span", { text: card.notices[0] || "Showing safety guidance based on keywords in your message." })));
   }
-  if (card.notices.length) {
-    parts.push(el("ul", { class: "notices" }, ...card.notices.map((n) => el("li", { text: n }))));
-  }
 
+  // 2. Immediate action steps.
   if (card.protocols.length) {
-    parts.push(section("Do this now",
+    parts.push(el("section", { class: "panel panel-now" }, el("h2", { text: "Do this now" }),
       ...card.protocols.map((p) => el("div", { class: "protocol" },
         el("h3", { text: p.title }),
-        el("ol", {}, ...p.steps.map((s) => el("li", { text: s })))))));
+        el("ol", { class: "steps", role: "list" }, ...p.steps.map((s) => el("li", { text: s })))))));
+  }
+
+  // 3. AI summary and transparency notices (AI cards only; the fallback card already said why above).
+  if (card.source !== "fallback") {
+    parts.push(el("p", { class: "summary", text: card.summary }));
+    if (card.notices.length) {
+      parts.push(el("ul", { class: "notices" }, ...card.notices.map((n) => el("li", { text: n }))));
+    }
   }
 
   parts.push(section("Call for help",
@@ -226,10 +257,7 @@ function renderCard(card) {
       el("ul", { class: "facts" }, ...card.facts.map(factItem))));
   }
 
-  parts.push(el("p", { class: "hint", text: card.disclaimer }));
-  if (card.source === "fallback") {
-    parts.push(el("p", { class: "hint", text: "This card was generated without AI analysis." }));
-  }
+  parts.push(el("p", { class: "hint card-disclaimer", text: card.disclaimer }));
 
   resultEl.replaceChildren(...parts);
   resultEl.hidden = false;
