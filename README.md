@@ -40,7 +40,7 @@ POST /api/analyze  (FastAPI)
 Action card (JSON) -> rendered with textContent (no HTML injection)
 ```
 
-**Model failover (availability only):** on a transient 429 / 503 / 504 (seen repeatedly during live testing), the same request moves to the next model in `GEMINI_FALLBACK_MODELS`; each model gets at most one attempt, all inside one 25 s budget that keeps 1 s in reserve for validation. Whichever model answers, the output goes through the identical prompt, schema validation, evidence checks and safety rules, and the user is not shown which model answered. If every model is unavailable, a call times out, fails with any other error, or returns invalid output twice, the user gets a **fallback card** driven by the red-flag rules, with contacts and safety steps.
+**Model failover (availability only):** on a transient 429 / 503 / 504 (seen repeatedly during live testing), the same request moves to the next model in `GEMINI_FALLBACK_MODELS`; each model gets at most one attempt. The whole Gemini step — first call, failover and the one schema-repair call — shares a single 25 s budget that keeps 1 s in reserve for validation; the repair call is skipped if under 4 s remain. Whichever model answers, the output goes through the identical prompt, schema validation, evidence checks and safety rules, and the user is not shown which model answered. If every model is unavailable, a call times out, fails with any other error, or returns invalid output twice, the user gets a **fallback card** driven by the red-flag rules, with contacts and safety steps.
 
 ## What Gemini does — and does not do
 | Gemini does | Gemini never does |

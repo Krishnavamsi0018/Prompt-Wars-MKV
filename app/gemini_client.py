@@ -49,7 +49,11 @@ def wrap_user_text(text: str) -> str:
 
 class LLM(Protocol):
     async def generate(
-        self, user_text: str, images: list[tuple[bytes, str]], correction: str | None = None
+        self,
+        user_text: str,
+        images: list[tuple[bytes, str]],
+        correction: str | None = None,
+        deadline: float | None = None,
     ) -> str: ...
 
 
@@ -69,8 +73,13 @@ class GeminiClient:
         )
 
     async def generate(
-        self, user_text: str, images: list[tuple[bytes, str]], correction: str | None = None
+        self,
+        user_text: str,
+        images: list[tuple[bytes, str]],
+        correction: str | None = None,
+        deadline: float | None = None,
     ) -> str:
+        """`deadline` (event-loop clock) lets the caller share ONE budget across several generate() calls."""
         parts: list[types.Part] = [types.Part.from_text(text=wrap_user_text(user_text))]
         parts += [types.Part.from_bytes(data=data, mime_type=mime) for data, mime in images]
         if images:
@@ -87,7 +96,8 @@ class GeminiClient:
         )
         contents = [types.Content(role="user", parts=parts)]
         loop = asyncio.get_running_loop()
-        deadline = loop.time() + self._timeout_s  # ONE overall budget shared by every model in the chain
+        if deadline is None:  # ONE overall budget shared by every model in the chain
+            deadline = loop.time() + self._timeout_s
 
         for index, model in enumerate(self._models):
             # A reply must arrive with VALIDATION_RESERVE_S to spare, so a late answer is never returned.

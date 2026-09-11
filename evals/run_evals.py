@@ -30,13 +30,13 @@ class RecordingLLM:
         self.max_calls = max_calls
         self.log: list[dict] = []
 
-    async def generate(self, user_text, images, correction=None):
+    async def generate(self, user_text, images, correction=None, deadline=None):
         if self.max_calls is not None and len(self.log) >= self.max_calls:
             self.log.append({"ok": False, "seconds": 0, "error": "call budget exhausted (not sent)"})
             raise LLMError("call_budget_exhausted")
         t0 = time.perf_counter()
         try:
-            raw = await self.inner.generate(user_text, images, correction)
+            raw = await self.inner.generate(user_text, images, correction, deadline=deadline)
             self.log.append({"ok": True, "seconds": round(time.perf_counter() - t0, 1),
                              "correction": bool(correction), "raw": raw})
             return raw

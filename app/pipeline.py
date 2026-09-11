@@ -3,14 +3,16 @@
 Kept separate from main.py so it can be tested without HTTP and with a fake model.
 """
 
+import asyncio
 import logging
 import re
 
 from pydantic import ValidationError
 
 from app.actions import DISCLAIMER, build_links, build_sos_message, card_contacts
+from app.config import settings
 from app.fallback import build_fallback_card
-from app.gemini_client import LLM, LLMError
+from app.gemini_client import LLM, MIN_ATTEMPT_BUDGET_S, VALIDATION_RESERVE_S, LLMError
 from app.protocols import PROTOCOLS, contacts_for
 from app.schemas import ActionCard, CardFact, CardProtocol, GeminiAssessment, RedFlag
 from app.verify import (
@@ -27,6 +29,8 @@ from app.verify import (
 log = logging.getLogger("lifebridge")
 
 MAX_PROTOCOLS = 4
+# A repair call is only worth starting if a model attempt can still finish and be validated in time.
+MIN_REPAIR_BUDGET_S = MIN_ATTEMPT_BUDGET_S + VALIDATION_RESERVE_S
 _FENCE = re.compile(r"^\s*```(?:json)?\s*|\s*```\s*$", re.IGNORECASE)
 
 
@@ -50,6 +54,7 @@ async def analyze(
     images: list[tuple[bytes, str]],
     lat: float | None = None,
     lng: float | None = None,
+    budget_s: float | None = None,
 ) -> ActionCard:
     rules = scan_red_flags(text)
 
@@ -57,10 +62,17 @@ async def analyze(
         log.warning("analyze outcome=fallback reason=not_configured")
         return build_fallback_card(text, rules, lat, lng, "AI analysis is not configured on this server.")
 
+    # ONE deadline for the whole Gemini step: first call, model failover AND the schema-repair call.
+    loop = asyncio.get_running_loop()
+    deadline = loop.time() + (settings.gemini_timeout_s if budget_s is None else budget_s)
+
     correction: str | None = None
     for attempt in (1, 2):
+        if attempt == 2 and deadline - loop.time() < MIN_REPAIR_BUDGET_S:
+            log.warning("analyze outcome=fallback reason=no_time_for_repair")
+            return build_fallback_card(text, rules, lat, lng, "AI returned an unreadable answer.")
         try:
-            raw = await llm.generate(text, images, correction)
+            raw = await llm.generate(text, images, correction, deadline=deadline)
         except LLMError as exc:
             log.warning("analyze outcome=fallback reason=llm_error:%s attempt=%d", exc, attempt)
             return build_fallback_card(text, rules, lat, lng, "AI analysis is unavailable right now.")

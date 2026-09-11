@@ -20,8 +20,8 @@ class FakeLLM:
         self.responses = list(responses)
         self.calls: list[dict] = []
 
-    async def generate(self, user_text, images, correction=None):
-        self.calls.append({"text": user_text, "images": images, "correction": correction})
+    async def generate(self, user_text, images, correction=None, deadline=None):
+        self.calls.append({"text": user_text, "images": images, "correction": correction, "deadline": deadline})
         item = self.responses.pop(0)
         if isinstance(item, Exception):
             raise item
