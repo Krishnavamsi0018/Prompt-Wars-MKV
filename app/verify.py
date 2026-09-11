@@ -58,6 +58,27 @@ def fact_status(fact: ExtractedFact, user_text: str, has_images: bool) -> FactSt
     return "visual" if has_images else "unverified"
 
 
+# Clinical/escalating claims a model may "upgrade" a report into (e.g. "not answering" -> "unresponsive").
+STRONG_CLAIMS: tuple[str, ...] = (
+    "unresponsive", "unconscious", "not breathing", "stopped breathing", "cardiac arrest", "heart attack",
+    "stroke", "seizure", "fracture", "broken", "concussion", "dead", "died", "deceased", "paralysed",
+    "paralyzed", "internal bleeding", "severe", "heavy", "critical", "life threatening", "poisoned", "overdose",
+)
+
+
+def faithful_value(value: str, quote: str, user_text: str) -> str:
+    """Keep a verified fact no stronger than the user's words.
+
+    If the model's value contains a strong claim that the user never wrote, fall back to the user's own
+    (already verified) quote, e.g. "Father is unresponsive" -> "He is not answering".
+    """
+    v, t = f" {normalize(value)} ", f" {normalize(user_text)} "
+    if any(f" {c} " in v and f" {c} " not in t for c in STRONG_CLAIMS):
+        words = quote.strip().strip(".,;:!?\"'“”").strip()
+        return words[:1].upper() + words[1:]
+    return value
+
+
 # ---------- Red-flag safety rules ----------
 
 
@@ -81,9 +102,13 @@ RULES: tuple[Rule, ...] = (
          _rx(r"\bnot breathing\b", r"\bstopped breathing\b", r"\bno breath", r"\bisn'?t breathing\b",
              r"saa?ns? nahi", r"साँस नहीं", r"सांस नहीं"),
          "unresponsive_person", "medical"),
-    Rule("unresponsive", "Unconscious / not responding", "critical",
-         _rx(r"\bunconscious\b", r"\bunresponsive\b", r"\bnot responding\b", r"\bnot waking\b",
-             r"\bpassed out\b", r"\bcollapsed\b", r"\bfainted\b", r"\bbehosh\b", r"बेहोश"),
+    Rule("unresponsive", "Not responding", "critical",
+         _rx(r"\bunconscious\b", r"\bunresponsive\b", r"\bpassed out\b", r"\bcollapsed\b", r"\bfainted\b",
+             # "not answering / doesn't respond" - but not "not answering my calls / the door"
+             r"\b(not|isn'?t|is not|doesn'?t|does not|won'?t|will not|can'?t|cannot)\s+"
+             r"(answer(ing)?|respond(ing)?|wak(e|ing)(\s+up)?)\b"
+             r"(?!\s+(to\s+)?(my|his|her|their|our|the|a)?\s*(phone|calls?|texts?|messages?|door|emails?))",
+             r"\bno response\b", r"\bbehosh\b", r"बेहोश", r"\bjawab nahi", r"जवाब नहीं"),
          "unresponsive_person", "medical"),
     Rule("breathing_difficulty", "Difficulty breathing", "critical",
          _rx(r"\bcan'?t breathe\b", r"\bcannot breathe\b", r"\bstruggling to breathe\b",

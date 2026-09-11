@@ -5,7 +5,14 @@ import pytest
 from app.gemini_client import load_system_prompt, wrap_user_text
 from app.protocols import PROTOCOL_IDS, contacts_for
 from app.ratelimit import RateLimiter
-from app.verify import quote_in_text, raise_severity, sanitize_free_text, scan_red_flags, severity_floor
+from app.verify import (
+    faithful_value,
+    quote_in_text,
+    raise_severity,
+    sanitize_free_text,
+    scan_red_flags,
+    severity_floor,
+)
 
 
 @pytest.mark.parametrize(("quote", "text"), [
@@ -42,6 +49,38 @@ def test_quote_not_found(quote, text):
 ])
 def test_red_flags_detected(text, expected):
     assert expected <= {r.id for r in scan_red_flags(text)}
+
+
+@pytest.mark.parametrize("text", [
+    "my father fell on the stairs, he is not answering",
+    "she doesn't answer when I call her name",
+    "he is not responding at all",
+    "baby won't wake up",
+    "dadi jawab nahi de rahi",
+    "there was no response when I shook him",
+])
+def test_not_answering_counts_as_unresponsive(text):
+    assert "unresponsive" in {r.id for r in scan_red_flags(text)}
+
+
+@pytest.mark.parametrize("text", [
+    "my friend is not answering my calls",
+    "he doesn't answer the door, can you tell me the plumber's schedule",
+    "she is not responding to my messages",
+])
+def test_unanswered_phone_or_door_is_not_a_red_flag(text):
+    assert "unresponsive" not in {r.id for r in scan_red_flags(text)}
+
+
+@pytest.mark.parametrize(("value", "quote", "text", "expected"), [
+    # the live-test case: the model upgraded "not answering" to "unresponsive"
+    ("Father is unresponsive", "he is not answering.", "my father fell, he is not answering.", "He is not answering"),
+    ("Heavy bleeding from head", "blood on his head", "there is blood on his head", "Blood on his head"),
+    ("Blood on head", "blood on his head", "there is blood on his head", "Blood on head"),
+    ("Unconscious", "he is unconscious", "he is unconscious and pale", "Unconscious"),  # user said it
+])
+def test_fact_value_stays_faithful_to_user_words(value, quote, text, expected):
+    assert faithful_value(value, quote, text) == expected
 
 
 @pytest.mark.parametrize("text", [

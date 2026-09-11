@@ -13,7 +13,15 @@ from app.fallback import build_fallback_card
 from app.gemini_client import LLM, LLMError
 from app.protocols import PROTOCOLS, contacts_for
 from app.schemas import ActionCard, CardFact, CardProtocol, GeminiAssessment, RedFlag
-from app.verify import Rule, fact_status, raise_severity, sanitize_free_text, scan_red_flags, severity_floor
+from app.verify import (
+    Rule,
+    fact_status,
+    faithful_value,
+    raise_severity,
+    sanitize_free_text,
+    scan_red_flags,
+    severity_floor,
+)
 
 log = logging.getLogger("lifebridge")
 
@@ -94,7 +102,12 @@ def build_card(
     facts: list[CardFact] = []
     for f in a.facts:
         status = fact_status(f, text, has_images)
-        value = f.value if status != "unverified" else sanitize_free_text(f.value)
+        if status == "verified":
+            value = faithful_value(f.value, f.quote, text)
+        elif status == "visual":
+            value = f.value
+        else:
+            value = sanitize_free_text(f.value)
         facts.append(CardFact(**f.model_dump(exclude={"value"}), value=value, status=status))
 
     floor = severity_floor(rules)

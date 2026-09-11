@@ -91,6 +91,23 @@ def test_safety_rules_raise_severity_the_model_underrated(client, use_llm):
     assert {"not_breathing", "unresponsive"} <= {f["id"] for f in card["red_flags"]}
 
 
+def test_not_answering_cannot_be_underrated_or_overstated(client, use_llm):
+    """Live test 1 (see PROMPT_STRATEGY_TEMPLATE.md): 'not answering' was missed by rules and
+    upgraded to 'unresponsive' by the model. Here the model also under-rates severity."""
+    text = "my father fell on the stairs, there is blood on his head, he is not answering."
+    use_llm(assessment(severity="moderate", protocol_ids=["severe_bleeding"], facts=[
+        {"category": "condition", "label": "Responsiveness", "value": "Father is unresponsive",
+         "source": "text", "quote": "he is not answering.", "confidence": "high"},
+    ]))
+    card = post(client, text).json()
+    assert card["severity"] == "critical" and card["severity_escalated"] is True
+    assert card["protocols"][0]["id"] == "unresponsive_person"
+    assert card["facts"][0]["status"] == "verified"
+    assert card["facts"][0]["value"] == "He is not answering"
+    assert "unresponsive" not in card["sos_message"].lower()
+    assert "Not responding" in card["sos_message"]
+
+
 def test_rules_never_lower_model_severity(client, use_llm):
     use_llm(assessment(severity="critical"))
     card = post(client, "he burned his hand on the stove").json()  # rule floor is only "high"
