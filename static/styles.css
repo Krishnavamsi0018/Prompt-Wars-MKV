@@ -140,8 +140,6 @@ textarea:focus-visible { border-color: var(--focus); }
   width: 1.5rem; height: 1.5rem; border-radius: 50%; background: var(--ink); color: #fff;
   font-size: .8rem; font-weight: 700; display: flex; align-items: center; justify-content: center;
 }
-.card-disclaimer { margin-top: .9rem; font-size: .85rem; }
-
 .contacts { display: flex; flex-wrap: wrap; gap: .5rem; }
 .contacts .btn { flex: 1 1 10rem; }
 

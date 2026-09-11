@@ -257,8 +257,7 @@ function renderCard(card) {
       el("ul", { class: "facts" }, ...card.facts.map(factItem))));
   }
 
-  parts.push(el("p", { class: "hint card-disclaimer", text: card.disclaimer }));
-
+  // The disclaimer is shown once, in the page footer, directly below the card.
   resultEl.replaceChildren(...parts);
   resultEl.hidden = false;
   resultEl.focus();
