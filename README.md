@@ -40,7 +40,7 @@ POST /api/analyze  (FastAPI)
 Action card (JSON) -> rendered with textContent (no HTML injection)
 ```
 
-If Gemini is unavailable, times out, or returns invalid output twice, the user still gets a **fallback card** driven by the red-flag rules, with contacts and safety steps.
+Transient Gemini errors (429 / 503 / 504 — seen during live testing) get **one** retry after ~1 s, inside the same 25 s budget. If Gemini is still unavailable, times out, fails with any other error, or returns invalid output twice, the user gets a **fallback card** driven by the red-flag rules, with contacts and safety steps.
 
 ## What Gemini does — and does not do
 | Gemini does | Gemini never does |

@@ -1,16 +1,19 @@
 """The ONLY module that talks to Gemini. Everything else sees a plain `generate(...) -> str`."""
 
 import asyncio
+import logging
 import re
 from pathlib import Path
 from typing import Protocol
 
 from google import genai
-from google.genai import types
+from google.genai import errors, types
 
 from app.config import Settings
 from app.protocols import protocol_catalog
 from app.schemas import GeminiAssessment
+
+log = logging.getLogger("lifebridge")
 
 PROMPT_PATH = Path(__file__).parent / "prompts" / "system_prompt.md"
 _HTML_COMMENT = re.compile(r"<!--.*?-->\s*", re.DOTALL)
@@ -18,6 +21,18 @@ _HTML_COMMENT = re.compile(r"<!--.*?-->\s*", re.DOTALL)
 
 class LLMError(Exception):
     """Any failure to get a response from the model (timeout, quota, network, safety block, empty reply)."""
+
+
+# Live evals saw 503 "high demand" (returned in ~4-6 s) and 504 errors. Those, plus 429 rate limiting,
+# are worth exactly one quick retry. Everything else (400 bad request, 401/403 auth, 404 model, our own
+# timeout, empty reply) fails straight to the deterministic fallback.
+TRANSIENT_STATUS_CODES = frozenset({429, 503, 504})
+RETRY_DELAY_S = 1.0
+MIN_RETRY_BUDGET_S = 3.0  # don't start a retry that can't finish inside the overall timeout
+
+
+def is_transient(exc: Exception) -> bool:
+    return isinstance(exc, errors.APIError) and exc.code in TRANSIENT_STATUS_CODES
 
 
 def load_system_prompt() -> str:
@@ -68,17 +83,26 @@ class GeminiClient:
             temperature=0.1,
             automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),  # no tools used
         )
-        try:
-            response = await asyncio.wait_for(
-                self._client.aio.models.generate_content(
-                    model=self._model, contents=[types.Content(role="user", parts=parts)], config=config
-                ),
-                timeout=self._timeout_s,
-            )
-        except TimeoutError as exc:
-            raise LLMError("timeout") from exc
-        except Exception as exc:  # SDK raises several error types; the pipeline only needs "it failed"
-            raise LLMError(type(exc).__name__) from exc
+        contents = [types.Content(role="user", parts=parts)]
+        loop = asyncio.get_running_loop()
+        deadline = loop.time() + self._timeout_s  # one overall budget covers the call AND any retry
+
+        for attempt in (1, 2):
+            try:
+                response = await asyncio.wait_for(
+                    self._client.aio.models.generate_content(model=self._model, contents=contents, config=config),
+                    timeout=max(0.0, deadline - loop.time()),
+                )
+                break
+            except TimeoutError as exc:
+                raise LLMError("timeout") from exc
+            except Exception as exc:  # SDK raises several error types; the pipeline only needs "it failed"
+                remaining = deadline - loop.time()
+                if attempt == 1 and is_transient(exc) and remaining >= RETRY_DELAY_S + MIN_RETRY_BUDGET_S:
+                    log.warning("gemini transient error %s; retrying once", getattr(exc, "code", "?"))
+                    await asyncio.sleep(RETRY_DELAY_S)
+                    continue
+                raise LLMError(f"{type(exc).__name__}:{getattr(exc, 'code', '')}") from exc
 
         text = response.text
         if not text:
