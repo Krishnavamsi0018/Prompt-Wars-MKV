@@ -40,7 +40,7 @@ POST /api/analyze  (FastAPI)
 Action card (JSON) -> rendered with textContent (no HTML injection)
 ```
 
-Transient Gemini errors (429 / 503 / 504 — seen during live testing) get **one** retry after ~1 s, inside the same 25 s budget. If Gemini is still unavailable, times out, fails with any other error, or returns invalid output twice, the user gets a **fallback card** driven by the red-flag rules, with contacts and safety steps.
+**Model failover (availability only):** on a transient 429 / 503 / 504 (seen repeatedly during live testing), the same request moves to the next model in `GEMINI_FALLBACK_MODELS`; each model gets at most one attempt, all inside one 25 s budget that keeps 1 s in reserve for validation. Whichever model answers, the output goes through the identical prompt, schema validation, evidence checks and safety rules, and the user is not shown which model answered. If every model is unavailable, a call times out, fails with any other error, or returns invalid output twice, the user gets a **fallback card** driven by the red-flag rules, with contacts and safety steps.
 
 ## What Gemini does — and does not do
 | Gemini does | Gemini never does |
@@ -94,7 +94,8 @@ Open http://localhost:8000. Without a key the app still runs and serves fallback
 |---|---|---|---|
 | `GEMINI_API_KEY` | yes (for AI) | – | Server-side only. Never sent to the browser, never committed. |
 | `GEMINI_MODEL` | no | `gemini-3.6-flash` | Model id (`gemini-2.5-flash` is no longer available to new API keys) |
-| `GEMINI_TIMEOUT_S` | no | `25` | Hard timeout per Gemini call |
+| `GEMINI_FALLBACK_MODELS` | no | *(empty)* | Comma-separated models tried in order after a 429/503/504, e.g. `gemini-3.7-flash,gemini-3.8-flash`. Empty = primary only |
+| `GEMINI_TIMEOUT_S` | no | `25` | Overall budget for the Gemini step, shared by all models in the chain |
 | `RATE_LIMIT_PER_MINUTE` | no | `8` | Per-IP limit on `/api/analyze` |
 | `MAX_TEXT_CHARS`, `MAX_IMAGES`, `MAX_IMAGE_BYTES` | no | `4000`, `3`, `5 MB` | Input limits |
 

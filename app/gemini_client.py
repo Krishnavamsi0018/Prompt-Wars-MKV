@@ -23,12 +23,13 @@ class LLMError(Exception):
     """Any failure to get a response from the model (timeout, quota, network, safety block, empty reply)."""
 
 
-# Live evals saw 503 "high demand" (returned in ~4-6 s) and 504 errors. Those, plus 429 rate limiting,
-# are worth exactly one quick retry. Everything else (400 bad request, 401/403 auth, 404 model, our own
-# timeout, empty reply) fails straight to the deterministic fallback.
+# Model failover (availability only). Live tests saw repeated 503 "high demand" (returned in ~4-6 s) and
+# 504 errors on more than one model. On 429/503/504 the SAME request moves to the next configured model;
+# each model gets at most one attempt. Everything else (400 bad request, 401/403 auth, 404 model, 500,
+# our own timeout, empty reply, unexpected exceptions) fails straight to the deterministic fallback.
 TRANSIENT_STATUS_CODES = frozenset({429, 503, 504})
-RETRY_DELAY_S = 1.0
-MIN_RETRY_BUDGET_S = 3.0  # don't start a retry that can't finish inside the overall timeout
+VALIDATION_RESERVE_S = 1.0  # time kept back inside the overall budget for schema validation + verification
+MIN_ATTEMPT_BUDGET_S = 3.0  # don't start a failover attempt that can't realistically finish in time
 
 
 def is_transient(exc: Exception) -> bool:
@@ -54,7 +55,8 @@ class LLM(Protocol):
 
 class GeminiClient:
     def __init__(self, settings: Settings) -> None:
-        self._model = settings.gemini_model
+        # Primary first, then configured fallbacks; duplicates removed so no model is tried twice.
+        self._models = tuple(dict.fromkeys([settings.gemini_model, *settings.gemini_fallback_models]))
         self._timeout_s = settings.gemini_timeout_s
         self._system_prompt = load_system_prompt()
         self._client = genai.Client(
@@ -85,26 +87,32 @@ class GeminiClient:
         )
         contents = [types.Content(role="user", parts=parts)]
         loop = asyncio.get_running_loop()
-        deadline = loop.time() + self._timeout_s  # one overall budget covers the call AND any retry
+        deadline = loop.time() + self._timeout_s  # ONE overall budget shared by every model in the chain
 
-        for attempt in (1, 2):
+        for index, model in enumerate(self._models):
+            # A reply must arrive with VALIDATION_RESERVE_S to spare, so a late answer is never returned.
+            budget = deadline - loop.time() - VALIDATION_RESERVE_S
             try:
                 response = await asyncio.wait_for(
-                    self._client.aio.models.generate_content(model=self._model, contents=contents, config=config),
-                    timeout=max(0.0, deadline - loop.time()),
+                    self._client.aio.models.generate_content(model=model, contents=contents, config=config),
+                    timeout=max(0.0, budget),
                 )
-                break
             except TimeoutError as exc:
                 raise LLMError("timeout") from exc
             except Exception as exc:  # SDK raises several error types; the pipeline only needs "it failed"
-                remaining = deadline - loop.time()
-                if attempt == 1 and is_transient(exc) and remaining >= RETRY_DELAY_S + MIN_RETRY_BUDGET_S:
-                    log.warning("gemini transient error %s; retrying once", getattr(exc, "code", "?"))
-                    await asyncio.sleep(RETRY_DELAY_S)
+                reason = f"{type(exc).__name__}:{getattr(exc, 'code', '')}"
+                has_next = index + 1 < len(self._models)
+                time_left = deadline - loop.time() - VALIDATION_RESERVE_S
+                if is_transient(exc) and has_next and time_left >= MIN_ATTEMPT_BUDGET_S:
+                    log.warning("gemini %s on %s; failing over to %s", reason, model, self._models[index + 1])
                     continue
-                raise LLMError(f"{type(exc).__name__}:{getattr(exc, 'code', '')}") from exc
+                raise LLMError(reason) from exc
 
-        text = response.text
-        if not text:
-            raise LLMError("empty_response")
-        return text
+            text = response.text
+            if not text:
+                raise LLMError("empty_response")
+            if index:
+                log.info("gemini answered by fallback model %s", model)
+            return text
+
+        raise LLMError("no_models_configured")  # unreachable with a non-empty chain; kept for type safety
