@@ -66,14 +66,19 @@ STRONG_CLAIMS: tuple[str, ...] = (
 )
 
 
+def unsupported_claims(model_text: str, user_text: str) -> list[str]:
+    """Strong claims present in model-written text but absent from the user's own words."""
+    m, t = f" {normalize(model_text)} ", f" {normalize(user_text)} "
+    return [c for c in STRONG_CLAIMS if f" {c} " in m and f" {c} " not in t]
+
+
 def faithful_value(value: str, quote: str, user_text: str) -> str:
     """Keep a verified fact no stronger than the user's words.
 
     If the model's value contains a strong claim that the user never wrote, fall back to the user's own
     (already verified) quote, e.g. "Father is unresponsive" -> "He is not answering".
     """
-    v, t = f" {normalize(value)} ", f" {normalize(user_text)} "
-    if any(f" {c} " in v and f" {c} " not in t for c in STRONG_CLAIMS):
+    if unsupported_claims(value, user_text):
         words = quote.strip().strip(".,;:!?\"'“”").strip()
         return words[:1].upper() + words[1:]
     return value
@@ -151,7 +156,8 @@ RULES: tuple[Rule, ...] = (
          _rx(r"\bpoison", r"\boverdose\b", r"\bswallowed (bleach|pesticide|acid|pills)\b", r"\bzeh?er\b", r"ज़हर|जहर"),
          None, "medical"),
     Rule("seizure", "Seizure", "high",
-         _rx(r"\bseizure", r"\bconvuls", r"\bhaving (a )?fits?\b", r"\bmirgi\b", r"मिर्गी"),
+         _rx(r"\bseizure", r"\bconvuls", r"\b(having|had|has) (a )?fits?\b", r"\b(is|was|started) fitting\b",
+             r"\bmirgi\b", r"मिर्गी"),
          "seizure", "medical"),
     Rule("heatstroke", "Possible heat stroke", "high",
          _rx(r"\bheat ?stroke\b", r"\bsunstroke\b", r"\bloo lag"),

@@ -108,6 +108,39 @@ def test_not_answering_cannot_be_underrated_or_overstated(client, use_llm):
     assert "Not responding" in card["sos_message"]
 
 
+def test_overstated_summary_is_replaced_with_verified_words(client, use_llm):
+    """Eval v1, case ambiguous_not_answering: summary said 'unresponsive, and possibly not breathing'."""
+    text = "my dadi is lying on the bed and not answering me. i cant tell if shes breathing. she is 78."
+    use_llm(assessment(
+        incident_type="medical", severity="critical",
+        summary="Your 78-year-old grandmother is lying on the bed, unresponsive, and possibly not breathing.",
+        facts=[{"category": "condition", "label": "Responsiveness", "value": "Lying on the bed and not answering me",
+                "source": "text", "quote": "lying on the bed and not answering me", "confidence": "high"}],
+        protocol_ids=["unresponsive_person"]))
+    card = post(client, text).json()
+    assert "unresponsive" not in card["summary"].lower() and "not breathing" not in card["summary"].lower()
+    assert card["summary"] == "Reported: Lying on the bed and not answering me."
+
+
+def test_faithful_summary_is_kept(client, use_llm):
+    use_llm(assessment())
+    assert post(client, NORMAL_TEXT).json()["summary"] == assessment()["summary"]
+
+
+def test_minor_injury_gets_no_generic_emergency_card(client, use_llm):
+    """Eval v1, case minor_injury: 'Stay safe / call 112' steps were shown for a small cut."""
+    use_llm(assessment(scope="non_urgent", severity="low", protocol_ids=["general_safety"], facts=[]))
+    card = post(client, "I cut my finger while chopping vegetables, the bleeding stopped").json()
+    assert card["protocols"] == []
+    assert card["contacts"][0]["number"] == "112", "call options remain available"
+
+
+def test_urgent_without_specific_card_still_gets_general_safety(client, use_llm):
+    use_llm(assessment(scope="urgent", severity="moderate", protocol_ids=[], facts=[]))
+    card = post(client, "something is wrong with my neighbour, please help").json()
+    assert [p["id"] for p in card["protocols"]] == ["general_safety"]
+
+
 def test_rules_never_lower_model_severity(client, use_llm):
     use_llm(assessment(severity="critical"))
     card = post(client, "he burned his hand on the stove").json()  # rule floor is only "high"

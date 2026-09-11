@@ -1,4 +1,4 @@
-# Secrets - never commit
+﻿# Secrets - never commit
 .env
 .env.*
 !.env.example
@@ -10,8 +10,6 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 
-# Local eval outputs (may contain test inputs/responses)
-evals/results/
 
 # OS / editor
 .DS_Store

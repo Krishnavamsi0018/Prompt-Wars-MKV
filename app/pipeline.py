@@ -21,6 +21,7 @@ from app.verify import (
     sanitize_free_text,
     scan_red_flags,
     severity_floor,
+    unsupported_claims,
 )
 
 log = logging.getLogger("lifebridge")
@@ -86,8 +87,11 @@ def _merge_protocols(model_ids: list[str], rules: list[Rule], scope: str) -> lis
     ids = list(dict.fromkeys([*critical_rule_ids, *model_ids, *other_rule_ids]))
     if len(ids) > 1 and "general_safety" in ids:
         ids.remove("general_safety")
-    if not ids and scope != "out_of_scope":
+    # Generic "Stay safe" steps only make sense for real emergencies; they were noise on a small cut (eval v1).
+    if not ids and scope in ("emergency", "urgent"):
         ids = ["general_safety"]
+    if scope not in ("emergency", "urgent") and ids == ["general_safety"]:
+        ids = []
     return ids[:MAX_PROTOCOLS]
 
 
@@ -139,13 +143,22 @@ def build_card(
         notices.append("Details seen in photos are marked 'From photo' - please confirm them.")
 
     verified = [f for f in facts if f.status == "verified"]
+
+    # The summary is model prose: if it overstates the user's words (eval v1: "not answering" -> "unresponsive"),
+    # replace it with one built from the verified facts.
+    summary = sanitize_free_text(a.summary)
+    if unsupported_claims(summary, text):
+        log.info("summary replaced: unsupported claims=%s", unsupported_claims(summary, text))
+        summary = ("Reported: " + "; ".join(f.value.rstrip(". ") for f in verified[:4]) + ".") if verified else (
+            "Please check the details below.")
+
     return ActionCard(
         source="gemini",
         scope=scope,
         incident_type=incident_type,
         severity=severity,
         severity_escalated=escalated,
-        summary=sanitize_free_text(a.summary),
+        summary=summary,
         language=a.language,
         red_flags=red_flags,
         facts=facts,

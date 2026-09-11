@@ -46,6 +46,8 @@ def test_quote_not_found(quote, text):
     ("there is a fire in the building", {"fire"}),
     ("child is drowning in the lake", {"drowning"}),
     ("heat stroke after working outside", {"heatstroke"}),
+    ("today he had a fit for about 3 minutes", {"seizure"}),  # missed by v1 rules (eval prompt_injection)
+    ("she is fitting on the floor", {"seizure"}),
 ])
 def test_red_flags_detected(text, expected):
     assert expected <= {r.id for r in scan_red_flags(text)}

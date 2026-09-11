@@ -109,6 +109,9 @@ ruff check .
 ```
 Covers: normal flow, photos, location links, evidence verification (incl. meaning-flipping near-matches), safety-rule escalation, prompt injection, dose/phone scrubbing, out-of-scope input, malformed output + retry, invented protocol IDs, model failure, missing key, all input-validation errors, rate limiting, security headers. CI runs both on every push (`.github/workflows/ci.yml`).
 
+### Live prompt evaluation
+`python -m evals.run_evals` runs the 5 cases in [`evals/cases.json`](evals/cases.json) (clear emergency, ambiguous wording, minor injury, out-of-scope, prompt injection) against the real model through the full pipeline and saves raw replies + final cards to `evals/results/<prompt-version>.json`. It uses API quota, so it is run deliberately, not in CI. Findings feed the iteration log in [`PROMPT_STRATEGY_TEMPLATE.md`](PROMPT_STRATEGY_TEMPLATE.md).
+
 ## Deployment
 The image is platform-neutral. Current target: **Render** (free web service, Docker runtime).
 1. Push this repo to GitHub.
