@@ -31,6 +31,37 @@ def test_frontend_never_contains_api_key_reference(client):
         assert "GEMINI_API_KEY" not in client.get(path).text
 
 
+# ---------- vetted protocol cards (single source for on-page guidance) ----------
+
+def test_protocols_endpoint_returns_vetted_content_unchanged(client):
+    from app.protocols import PROTOCOLS
+    r = client.get("/api/protocols", params={"ids": "unresponsive_person,severe_bleeding,road_accident"})
+    assert r.status_code == 200
+    cards = r.json()
+    assert [c["id"] for c in cards] == ["unresponsive_person", "severe_bleeding", "road_accident"]
+    for card in cards:
+        assert card["title"] == PROTOCOLS[card["id"]].title
+        assert card["steps"] == list(PROTOCOLS[card["id"]].steps)
+
+
+def test_protocols_endpoint_ignores_unknown_ids_and_defaults_to_all(client):
+    from app.protocols import PROTOCOLS
+    assert client.get("/api/protocols", params={"ids": "give_aspirin,<script>"}).json() == []
+    assert len(client.get("/api/protocols").json()) == len(PROTOCOLS)
+
+
+def test_frontend_does_not_duplicate_protocol_steps(client):
+    """Emergency guidance must be rendered from app/protocols.py, never hard-coded in the page."""
+    from app.actions import DISCLAIMER
+    from app.protocols import PROTOCOLS
+    page = client.get("/").text + client.get("/app.js").text
+    for protocol in PROTOCOLS.values():
+        for step in protocol.steps:
+            if step in DISCLAIMER:  # "If anyone may be in danger, call 112." is the shared disclaimer line
+                continue
+            assert step not in page, f"protocol step duplicated in frontend: {step!r}"
+
+
 # ---------- normal flow ----------
 
 def test_normal_text_flow(client, use_llm):

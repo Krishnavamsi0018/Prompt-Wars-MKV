@@ -12,8 +12,9 @@ from fastapi.staticfiles import StaticFiles
 from app.config import settings
 from app.gemini_client import GeminiClient
 from app.pipeline import analyze
+from app.protocols import PROTOCOLS
 from app.ratelimit import RateLimiter
-from app.schemas import ActionCard
+from app.schemas import ActionCard, CardProtocol
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 log = logging.getLogger("lifebridge")
@@ -82,6 +83,16 @@ async def guard(request: Request, call_next):
 @app.get("/healthz")
 async def healthz(request: Request) -> dict:
     return {"status": "ok", "gemini_configured": request.app.state.llm is not None}
+
+
+@app.get("/api/protocols", response_model=list[CardProtocol])
+async def protocols_endpoint(ids: str = "") -> list[CardProtocol]:
+    """Read-only vetted protocol cards from app/protocols.py, so on-page guidance has one source.
+
+    `ids` is a comma-separated list; unknown ids are ignored; empty returns every card.
+    """
+    wanted = [i for i in dict.fromkeys(ids.split(",")) if i in PROTOCOLS] if ids else list(PROTOCOLS)
+    return [CardProtocol(id=p, title=PROTOCOLS[p].title, steps=list(PROTOCOLS[p].steps)) for p in wanted]
 
 
 @app.post("/api/analyze", response_model=ActionCard)

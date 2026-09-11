@@ -4,58 +4,220 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="LifeBridge turns a messy emergency description or photo into clear, verified next steps.">
-  <meta name="theme-color" content="#b3261e">
+  <meta name="theme-color" content="#f6f4f0">
   <title>LifeBridge - emergency help, step by step</title>
   <link rel="stylesheet" href="styles.css">
   <script src="app.js" defer></script>
 </head>
 <body>
-  <a class="skip-link" href="#intake-title">Skip to the form</a>
+  <a class="skip-link" href="#text">Skip to the form</a>
 
-  <header class="sos-bar">
-    <p class="brand" aria-label="LifeBridge">Life<span>Bridge</span></p>
-    <nav class="sos-actions" aria-label="Emergency calls">
-      <a class="btn btn-call" href="tel:112">Call 112</a>
-      <a class="btn btn-call-secondary" href="tel:108">Ambulance 108</a>
+  <div class="shell">
+    <header class="topbar">
+      <a class="brand" href="#home" aria-label="LifeBridge home">
+        <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+          <path fill="currentColor" d="M16 3.5c4.6 4.2 5.4 9.6 0 15.5-5.4-5.9-4.6-11.3 0-15.5Z"/>
+          <path fill="currentColor" d="M14.6 20.4C9.4 21.6 5.1 19 3.6 13.8c5.3-1.2 9.6 1.4 11 6.6Z"/>
+          <path fill="currentColor" d="M17.4 20.4c5.2 1.2 9.5-1.4 11-6.6-5.3-1.2-9.6 1.4-11 6.6Z"/>
+          <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 19.5v9"/>
+        </svg>
+        <span class="brand-name">LifeBridge</span>
+      </a>
+      <nav class="sos-actions" aria-label="Emergency calls">
+        <a class="pill pill-black" href="tel:112">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M6.6 3h2.9l1.6 4.1-2.1 1.5a11.5 11.5 0 0 0 5.4 5.4l1.5-2.1 4.1 1.6v2.9a2 2 0 0 1-2.1 2A15.9 15.9 0 0 1 4.6 5.1 2 2 0 0 1 6.6 3Z"/></svg>
+          Call 112
+        </a>
+        <a class="pill pill-red" href="tel:108">Ambulance 108</a>
+      </nav>
+    </header>
+
+    <nav class="sidebar" aria-label="Sections">
+      <ul class="side-links">
+        <li><a href="#home" data-view-link="home" aria-current="page">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M3 10.8 12 4l9 6.8V20a1 1 0 0 1-1 1h-5.5v-6h-5v6H4a1 1 0 0 1-1-1Z"/></svg>
+          Home</a></li>
+        <li><a href="#emergency" data-view-link="emergency">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" d="M12 3 19 6v5.8c0 4.4-2.9 7.6-7 9.2-4.1-1.6-7-4.8-7-9.2V6Z"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M12 8.5v6M9 11.5h6"/></svg>
+          Emergency</a></li>
+        <li><a href="#about" data-view-link="about">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="10" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path fill="none" stroke="currentColor" stroke-width="1.8" d="M6.6 18.3a6.5 6.5 0 0 1 10.8 0"/></svg>
+          About</a></li>
+        <li><a href="#faq" data-view-link="faq">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M9.6 9.4a2.5 2.5 0 1 1 3.4 2.4c-.6.3-1 .8-1 1.5v.6"/><circle cx="12" cy="17" r="1" fill="currentColor"/></svg>
+          FAQs</a></li>
+      </ul>
+      <p class="side-note">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" d="M12 3 19 6v5.8c0 4.4-2.9 7.6-7 9.2-4.1-1.6-7-4.8-7-9.2V6Z"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="m9.2 12 2 2 3.8-3.8"/></svg>
+        <span>Your safety<br>matters.</span>
+      </p>
     </nav>
-  </header>
 
-  <main id="main">
-    <section class="intake" aria-labelledby="intake-title">
-      <h1 id="intake-title">What is happening?</h1>
-      <p class="lede">Describe it in your own words, in any language. Add a photo if you can. LifeBridge turns it into clear steps and a message you can send.</p>
+    <main id="main">
+      <div class="view" id="view-home" data-view="home">
+      <section class="intake" aria-labelledby="intake-title">
+        <p class="greeting">Hello,</p>
+        <h1 id="intake-title" tabindex="-1">What is happening?</h1>
+        <p class="lede">Describe it in your own words, in any language. Add a photo if you can. LifeBridge turns it into clear steps and a message you can send.</p>
 
-      <form id="intake-form" novalidate>
-        <label class="field-label" for="text">Describe the situation</label>
-        <p class="hint" id="text-hint">Who is hurt, what you can see, and where you are.</p>
-        <textarea id="text" name="text" rows="5" maxlength="4000" aria-describedby="text-hint"
-          placeholder="e.g. my father fell on the stairs, he is not answering, there is blood on his head, we are near Hebbal flyover"></textarea>
-
-        <div class="optional">
-          <div class="photo-picker">
-            <label class="btn btn-secondary" for="photos">Add photos</label>
-            <input class="visually-hidden" type="file" id="photos" name="photos" accept="image/jpeg,image/png,image/webp,image/heic" multiple aria-describedby="photo-hint">
-            <p class="hint" id="photo-hint">Up to 3 photos of the scene or of medical papers.</p>
-            <ul class="photo-list" id="photo-list" aria-label="Selected photos"></ul>
+        <form id="intake-form" novalidate>
+          <label class="field-label" for="text">Describe the situation</label>
+          <p class="hint" id="text-hint">Who is hurt, what you can see, and where you are.</p>
+          <div class="textarea-wrap">
+            <textarea id="text" name="text" rows="5" maxlength="4000" aria-describedby="text-hint text-count"
+              placeholder="e.g. My father fell on the stairs, he is not answering, there is blood on his head, we are near Hebbal flyover"></textarea>
+            <label class="attach" for="photos" title="Add photos">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="m20 11.6-7.9 7.9a5 5 0 0 1-7.1-7.1L13 4.4a3.3 3.3 0 0 1 4.7 4.7l-7.9 7.9a1.7 1.7 0 0 1-2.4-2.4l7.3-7.3"/></svg>
+            </label>
           </div>
-          <div class="location">
-            <button type="button" class="btn btn-secondary" id="loc-btn" aria-pressed="false" aria-describedby="loc-status">Share my location</button>
-            <p class="hint" id="loc-status" role="status">Adds a map link to your SOS message.</p>
+          <p class="counter" id="text-count">0/4000</p>
+
+          <div class="options">
+            <div class="option-card">
+              <input class="visually-hidden" type="file" id="photos" name="photos" accept="image/jpeg,image/png,image/webp,image/heic" multiple aria-describedby="photo-hint">
+              <span class="option-icon" aria-hidden="true">
+                <svg class="icon" viewBox="0 0 24 24" focusable="false"><rect x="3.5" y="4.5" width="17" height="15" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="9" cy="9.8" r="1.6" fill="currentColor"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" d="m4 18 5.5-5 3.5 3 2.5-2.2 4.5 4.2"/></svg>
+              </span>
+              <div>
+                <label class="option-title option-hit" for="photos">Add photos</label>
+                <p class="option-desc" id="photo-hint">Up to 3 photos of the scene or medical papers.</p>
+              </div>
+            </div>
+            <div class="option-card">
+              <span class="option-icon" aria-hidden="true">
+                <svg class="icon" viewBox="0 0 24 24" focusable="false"><path fill="currentColor" d="M12 21.5s-7-6.3-7-11.6a7 7 0 0 1 14 0c0 5.3-7 11.6-7 11.6Zm0-9a2.6 2.6 0 1 0 0-5.2 2.6 2.6 0 0 0 0 5.2Z"/></svg>
+              </span>
+              <div>
+                <button type="button" class="option-title option-hit" id="loc-btn" aria-pressed="false" aria-describedby="loc-status"><span id="loc-label">Share my location</span></button>
+                <p class="option-desc" id="loc-status" role="status">Adds a map link to your SOS message.</p>
+              </div>
+            </div>
           </div>
+          <ul class="photo-list" id="photo-list" aria-label="Selected photos"></ul>
+
+          <p class="form-error" id="form-error" role="alert"></p>
+          <button type="submit" class="btn btn-primary" id="submit-btn">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M21.4 2.6 2.9 10.2c-.8.3-.8 1.5.1 1.8l6.6 2.3 2.3 6.6c.3.9 1.5.9 1.8.1Z"/></svg>
+            <span>Get help steps</span>
+            <span class="cta-arrow" aria-hidden="true">&rarr;</span>
+          </button>
+        </form>
+      </section>
+
+      <p class="status" id="status" role="status" aria-live="polite"></p>
+
+      <section class="result" id="result" aria-labelledby="result-title" tabindex="-1" hidden></section>
+
+      <p class="disclaimer">LifeBridge gives general safety guidance, not medical advice or a diagnosis. It never contacts emergency services for you. If anyone may be in danger, call 112.</p>
+      </div>
+
+      <!-- ===== Emergency ===== -->
+      <section class="view" id="view-emergency" data-view="emergency" aria-labelledby="emergency-title" hidden>
+        <h1 id="emergency-title" tabindex="-1">Emergency</h1>
+        <p class="lede">If someone may be in immediate danger, call for help first.</p>
+
+        <div class="contact-grid">
+          <a class="contact-card contact-dark" href="tel:112" aria-label="Call 112, National Emergency">
+            <span class="contact-num">112</span><span class="contact-name">National Emergency</span>
+          </a>
+          <a class="contact-card contact-red" href="tel:108" aria-label="Call 108, Ambulance">
+            <span class="contact-num">108</span><span class="contact-name">Ambulance</span>
+          </a>
+          <a class="contact-card contact-plain" href="tel:100" aria-label="Call 100, Police">
+            <span class="contact-num">100</span><span class="contact-name">Police</span>
+          </a>
         </div>
 
-        <p class="form-error" id="form-error" role="alert"></p>
-        <button type="submit" class="btn btn-primary" id="submit-btn">Get help steps</button>
-      </form>
-    </section>
+        <h2 class="section-title">While help is on the way</h2>
+        <!-- Filled from GET /api/protocols: the same vetted cards (app/protocols.py) the action card uses. -->
+        <div class="guide-grid" id="guide-grid" data-protocols="unresponsive_person,severe_bleeding,road_accident" aria-busy="true">
+          <p class="guide-status" id="guide-status" role="status">Loading safety steps...</p>
+        </div>
 
-    <p class="status" id="status" role="status" aria-live="polite"></p>
+        <div class="danger-line">
+          <p><strong>If someone may be in danger, call 112 now.</strong></p>
+          <a class="btn btn-call" href="tel:112">Call 112</a>
+        </div>
+      </section>
 
-    <section class="result" id="result" aria-labelledby="result-title" tabindex="-1" hidden></section>
-  </main>
+      <!-- ===== About ===== -->
+      <section class="view" id="view-about" data-view="about" aria-labelledby="about-title" hidden>
+        <h1 id="about-title" tabindex="-1">About LifeBridge</h1>
+        <p class="hero-statement">From messy words to clear action.</p>
+        <p class="lede">In an emergency, people describe what is happening in fragments: panicked, mixed languages, missing details. LifeBridge turns that unstructured situation into verified, actionable information: how serious it looks, what to do now, who to call, and a message you can send.</p>
 
-  <footer class="footer">
-    <p>LifeBridge gives general safety guidance, not medical advice or a diagnosis. It never contacts emergency services for you. If anyone may be in danger, call 112.</p>
-  </footer>
+        <ol class="step-grid" role="list">
+          <li class="step-card"><span class="step-num" aria-hidden="true">01</span><h2 class="step-title">Describe</h2><p>Tell us what happened.</p></li>
+          <li class="step-card"><span class="step-num" aria-hidden="true">02</span><h2 class="step-title">Understand</h2><p>Gemini interprets your words, images and context.</p></li>
+          <li class="step-card"><span class="step-num" aria-hidden="true">03</span><h2 class="step-title">Verify</h2><p>Structured results are checked against what was actually reported.</p></li>
+          <li class="step-card"><span class="step-num" aria-hidden="true">04</span><h2 class="step-title">Act</h2><p>Get relevant safety steps and a message you can share.</p></li>
+        </ol>
+
+        <p class="principle">AI interprets. Code verifies. Safety rules constrain.</p>
+        <p class="about-note">LifeBridge does not diagnose medical conditions or contact emergency services for you.</p>
+      </section>
+
+      <!-- ===== FAQ ===== -->
+      <section class="view" id="view-faq" data-view="faq" aria-labelledby="faq-title" hidden>
+        <h1 id="faq-title" tabindex="-1">Frequently asked questions</h1>
+        <p class="lede">Straight answers about what LifeBridge does, and what it doesn't.</p>
+
+        <div class="faq-list">
+          <details class="faq-item">
+            <summary>What can I describe?</summary>
+            <div class="faq-answer">
+              <p>Any situation where someone's health or safety may be at risk: a fall, a road accident, someone not responding, a fire, violence. Use your own words, in any language, and include who is hurt, what you can see and where you are.</p>
+              <p>Gemini can read many languages. LifeBridge's built-in danger-sign checks currently recognise English and common Hindi phrasings.</p>
+            </div>
+          </details>
+          <details class="faq-item">
+            <summary>Can I add photos?</summary>
+            <div class="faq-answer">
+              <p>Yes. Up to 3 photos of the scene or of medical papers, as JPEG, PNG, WebP or HEIC, each under 5 MB. Photos are resized in your browser before they are sent.</p>
+              <p>Anything LifeBridge reads from a photo is marked "From photo - please confirm", because code cannot check it against your words.</p>
+            </div>
+          </details>
+          <details class="faq-item">
+            <summary>Why does LifeBridge ask for my location?</summary>
+            <div class="faq-answer">
+              <p>Only if you press "Share my location". It is used to add a Google Maps link to your SOS message and a "hospitals near my location" link. Your location is not sent to Gemini.</p>
+            </div>
+          </details>
+          <details class="faq-item">
+            <summary>Does LifeBridge diagnose medical conditions?</summary>
+            <div class="faq-answer">
+              <p>No. It describes what you reported and shows general safety steps chosen from a fixed, pre-written set. It never gives a diagnosis or medication doses. The steps are adapted from public first-aid guidance and have not been reviewed by a medical professional.</p>
+            </div>
+          </details>
+          <details class="faq-item">
+            <summary>Does LifeBridge call emergency services automatically?</summary>
+            <div class="faq-answer">
+              <p>No. LifeBridge never contacts anyone for you. The call buttons open your phone's dialler, and you choose whether to send the SOS message.</p>
+            </div>
+          </details>
+          <details class="faq-item">
+            <summary>What happens if Gemini is unavailable?</summary>
+            <div class="faq-answer">
+              <p>You still get a safety card. It is marked "Offline safety mode" and is built from LifeBridge's own danger-sign rules: a severity level, relevant safety steps, emergency numbers and an SOS message using your own words. The Call 112 button stays on screen throughout.</p>
+            </div>
+          </details>
+          <details class="faq-item">
+            <summary>What information does LifeBridge store?</summary>
+            <div class="faq-answer">
+              <p>LifeBridge does not use accounts or a database. Information submitted for analysis is sent to the Gemini API. Server logs may contain technical request information such as IP addresses.</p>
+            </div>
+          </details>
+        </div>
+      </section>
+    </main>
+
+    <aside class="visual" aria-hidden="true">
+      <div class="visual-frame">
+        <img src="landscape.svg" alt="" width="300" height="860">
+        <p class="visual-text">Real help.<br>When it matters.</p>
+        <span class="visual-rule"></span>
+      </div>
+    </aside>
+  </div>
 </body>
 </html>

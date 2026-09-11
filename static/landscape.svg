@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 860" preserveAspectRatio="xMidYMid slice">
+  <!-- Original illustration for LifeBridge: a valley road at dusk. Decorative only; no external assets. -->
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#cfd2cf"/>
+      <stop offset=".45" stop-color="#e6ddcf"/>
+      <stop offset="1" stop-color="#f2e2c9"/>
+    </linearGradient>
+  </defs>
+
+  <!-- sky, soft sun and a couple of thin cloud streaks -->
+  <rect width="300" height="520" fill="url(#sky)"/>
+  <circle cx="204" cy="352" r="110" fill="#f6e3c6" opacity=".22"/>
+  <circle cx="204" cy="352" r="62" fill="#f8e8cf" opacity=".35"/>
+  <circle cx="204" cy="352" r="24" fill="#fbf0dc" opacity=".9"/>
+  <rect x="26" y="214" width="120" height="3" rx="1.5" fill="#fff" opacity=".22"/>
+  <rect x="150" y="238" width="96" height="2" rx="1" fill="#fff" opacity=".18"/>
+
+  <!-- ridges: atmospheric perspective - paler and cooler with distance -->
+  <path fill="#c9ccc9" d="M0 418 18 409 34 413 52 398 66 404 84 388 100 396 118 381 134 392 150 385 170 399 190 386 208 397 226 383 246 395 264 386 284 394 300 388V540H0Z"/>
+  <path fill="#b4bab8" d="M0 448 20 437 38 443 58 426 76 435 98 418 118 432 138 420 160 436 182 426 204 441 226 424 250 437 272 427 300 436V570H0Z"/>
+  <rect y="430" width="300" height="46" fill="#efe4d3" opacity=".3"/>
+  <path fill="#96a19f" d="M0 486 24 470 46 480 70 460 92 474 116 457 142 476 166 462 190 480 216 460 240 474 266 464 300 476V610H0Z"/>
+  <path fill="#7b8985" d="M0 526 30 510 60 522 92 500 122 518 154 502 186 522 218 506 250 524 280 512 300 518V650H0Z"/>
+  <rect y="505" width="300" height="34" fill="#ebdfcc" opacity=".16"/>
+
+  <!-- near hills -->
+  <path fill="#5f6f65" d="M0 574C38 560 78 566 116 578 156 590 196 566 236 562 262 560 284 566 300 570V700H0Z"/>
+  <path fill="#4a5a50" d="M0 624C48 610 96 618 144 632 194 646 246 624 300 618V860H0Z"/>
+
+  <!-- road: one shape, narrowing and fading toward the horizon -->
+  <path fill="#8e8a80" d="M125 860Q175 800 192 775Q209 750 211 727.5Q213 705 219.5 686.5Q226 668 222 654Q218 640 211 627.5Q204 615 200.5 605.5Q197 596 201 588Q205 580 209.25 573Q213.5 566 212.75 561L212 556L216 556Q220.5 566 217.75 573Q215 580 213 588Q211 596 217.5 605.5Q224 615 235 627.5Q246 640 256 654Q266 668 266.5 686.5Q267 705 275 727.5Q283 750 279 775Q275 800 265 860Z"/>
+  <path fill="none" stroke="#d9d3c4" stroke-width="1.6" stroke-dasharray="9 12" opacity=".7" d="M195 860Q225 800 235.5 775Q246 750 243 727.5Q240 705 243 686.5Q246 668 239 654Q232 640 223 627.5"/>
+  <rect y="548" width="300" height="70" fill="#e9dcc6" opacity=".18"/>
+
+  <!-- conifer silhouettes, larger toward the viewer -->
+  <path fill="#2f3c35" d="M14 700 22 664 30 700ZM30 704 40 656 50 704ZM50 700 57 672 64 700ZM66 706 76 660 86 706ZM88 702 95 676 102 702ZM112 706 118 684 124 706Z"/>
+  <path fill="#3a4840" d="M150 626 154 610 158 626ZM162 628 166 614 170 628ZM270 604 273 592 276 604ZM280 606 284 590 288 606Z"/>
+
+  <!-- dark foreground banks keep the tagline legible -->
+  <path fill="#34423a" d="M0 700C44 692 96 700 150 724 160 760 150 810 138 860H0Z"/>
+  <path fill="#2b3730" d="M0 780C40 772 80 780 118 800L110 860H0Z"/>
+  <path fill="#3a4840" d="M284 790C292 786 300 788 300 790V860H270Z"/>
+</svg>

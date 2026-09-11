@@ -26,7 +26,9 @@ const textInput = $("text");
 const photoInput = $("photos");
 const photoList = $("photo-list");
 const locBtn = $("loc-btn");
+const locLabel = $("loc-label");
 const locStatus = $("loc-status");
+const textCount = $("text-count");
 const formError = $("form-error");
 const submitBtn = $("submit-btn");
 const statusEl = $("status");
@@ -50,6 +52,80 @@ function setStatus(message, busy = false) {
   statusEl.textContent = message;
   statusEl.classList.toggle("busy", busy);
 }
+
+// ---------- In-app sections (Home / Emergency / About / FAQ), switched by URL hash ----------
+
+const VIEW_TITLES = { home: "LifeBridge - emergency help, step by step", emergency: "Emergency - LifeBridge", about: "About - LifeBridge", faq: "FAQs - LifeBridge" };
+
+function showView(moveFocus) {
+  const requested = location.hash.slice(1);
+  const name = requested in VIEW_TITLES ? requested : "home"; // other hashes (e.g. the skip link) stay on Home
+  for (const view of document.querySelectorAll("[data-view]")) view.hidden = view.dataset.view !== name;
+  for (const link of document.querySelectorAll("[data-view-link]")) {
+    if (link.dataset.viewLink === name) link.setAttribute("aria-current", "page");
+    else link.removeAttribute("aria-current");
+  }
+  document.title = VIEW_TITLES[name];
+  if (moveFocus && requested in VIEW_TITLES) {
+    window.scrollTo(0, 0);
+    document.querySelector(`[data-view="${name}"] h1`).focus();
+  }
+}
+window.addEventListener("hashchange", () => showView(true));
+showView(false);
+
+// ---------- Emergency guidance: rendered from the vetted protocol cards (single source: app/protocols.py) ----------
+
+const GUIDE_ICONS = { // presentation only: [path, filled?]
+  unresponsive_person: [["M12 4a3.5 3.5 0 1 1 0 7 3.5 3.5 0 0 1 0-7Z"], ["M5 20.5a7 7 0 0 1 14 0"]],
+  severe_bleeding: [["M12 3.5s-6 6.6-6 11a6 6 0 0 0 12 0c0-4.4-6-11-6-11Z"]],
+  road_accident: [["M12 3.5 21.5 20h-19Z"], ["M12 10v4.5"], ["M12 16.2a1 1 0 1 1 0 2 1 1 0 0 1 0-2Z", true]],
+};
+
+function guideIcon(id) {
+  const NS = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(NS, "svg");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("class", "icon");
+  svg.setAttribute("focusable", "false");
+  for (const [d, filled] of GUIDE_ICONS[id] || []) {
+    const path = document.createElementNS(NS, "path");
+    path.setAttribute("d", d);
+    path.setAttribute("fill", filled ? "currentColor" : "none");
+    if (!filled) {
+      path.setAttribute("stroke", "currentColor");
+      path.setAttribute("stroke-width", "1.8");
+      path.setAttribute("stroke-linecap", "round");
+      path.setAttribute("stroke-linejoin", "round");
+    }
+    svg.append(path);
+  }
+  return el("span", { class: "option-icon", "aria-hidden": "true" }, svg);
+}
+
+async function loadEmergencyGuidance() {
+  const grid = $("guide-grid");
+  try {
+    const response = await fetch(`/api/protocols?ids=${encodeURIComponent(grid.dataset.protocols)}`);
+    const cards = response.ok ? await response.json() : [];
+    if (!cards.length) throw new Error("no protocols");
+    grid.replaceChildren(...cards.map((p) => el("article", { class: "guide-card" },
+      guideIcon(p.id),
+      el("h3", { text: p.title }),
+      el("ol", { class: "steps", role: "list" }, ...p.steps.map((s) => el("li", { text: s }))))));
+  } catch {
+    $("guide-status").textContent = "Could not load the safety steps. If anyone may be in danger, call 112 now.";
+  } finally {
+    grid.removeAttribute("aria-busy");
+  }
+}
+loadEmergencyGuidance();
+
+// ---------- Character counter (limit enforced by maxlength and the server) ----------
+
+function updateCount() { textCount.textContent = `${textInput.value.length}/${MAX_TEXT}`; }
+textInput.addEventListener("input", updateCount);
+updateCount();
 
 // ---------- Photos ----------
 
@@ -96,7 +172,7 @@ locBtn.addEventListener("click", () => {
   if (coords) {
     coords = null;
     locBtn.setAttribute("aria-pressed", "false");
-    locBtn.textContent = "Share my location";
+    locLabel.textContent = "Share my location";
     locStatus.textContent = "Location removed.";
     return;
   }
@@ -109,7 +185,7 @@ locBtn.addEventListener("click", () => {
     (pos) => {
       coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
       locBtn.setAttribute("aria-pressed", "true");
-      locBtn.textContent = "Location added ✓";
+      locLabel.textContent = "Location added ✓";
       locStatus.textContent = "Your location will be added to the SOS message.";
     },
     () => { locStatus.textContent = "Could not get location. Type a landmark or address instead."; },
